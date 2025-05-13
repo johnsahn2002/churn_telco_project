@@ -1,0 +1,5 @@
+2025-05-13 18:25:01,285 - INFO - Starting main at 2025-05-13 18:25:01.285579
+2025-05-13 18:25:01,316 - INFO - Loaded raw data with shape: (7043, 21)
+2025-05-13 18:25:01,347 - INFO - Saved metadata.
+2025-05-13 18:25:01,392 - INFO - Cleaned data saved to ../data/processed/cleaned_data.csv
+2025-05-13 18:25:01,392 - INFO - Finished main at 2025-05-13 18:25:01.392876
