@@ -1,0 +1,4 @@
+2025-07-11 15:33:37,726 - INFO - Starting main at 2025-07-11 15:33:37.726398
+2025-07-11 15:33:37,727 - WARNING - Raw data file not found: ../data/raw/churn_data.csv
+2025-07-11 15:33:37,727 - INFO - Attempting to download dataset from Kaggle...
+2025-07-11 15:33:37,759 - ERROR - Download script failed: Command '['python', 'pipeline/download_raw_data.py']' returned non-zero exit status 2.

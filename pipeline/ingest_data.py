@@ -10,92 +10,33 @@ If the raw dataset is missing, it automatically downloads it from Kaggle.
 
 import pandas as pd
 import os
-import logging
-from datetime import datetime
-import sys
-import numpy as np
-import warnings
-import subprocess
 
-warnings.filterwarnings("ignore")
+def load_and_clean_data(input_path, output_path):
+    print("Reading data...")
+    df = pd.read_csv(input_path)
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("ingest_data.log"),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
+    # Drop customerID if present
+    if 'customerID' in df.columns:
+        df.drop(columns=['customerID'], inplace=True)
 
-def log_script_start_end(func):
-    def wrapper(*args, **kwargs):
-        logging.info(f"Starting {func.__name__} at {datetime.now()}")
-        result = func(*args, **kwargs)
-        logging.info(f"Finished {func.__name__} at {datetime.now()}")
-        return result
-    return wrapper
-
-@log_script_start_end
-def main():
-    raw_data_path = '../data/raw/churn_data.csv'
-    processed_data_path = '../data/processed/cleaned_data.csv'
-
-    # Create directories
-    os.makedirs('../data/raw/', exist_ok=True)
-    os.makedirs('../data/processed/', exist_ok=True)
-
-    # Auto-download if raw file is missing
-    if not os.path.isfile(raw_data_path):
-        logging.warning(f"Raw data file not found: {raw_data_path}")
-        logging.info("Attempting to download dataset from Kaggle...")
-        try:
-            subprocess.run(['python', 'pipeline/download_raw_data.py'], check=True)
-        except subprocess.CalledProcessError as e:
-            logging.error(f"Download script failed: {e}")
-            sys.exit(1)
-
-    # Load raw data
-    try:
-        df = pd.read_csv(raw_data_path)
-        logging.info(f"Loaded raw data with shape: {df.shape}")
-    except Exception as e:
-        logging.error(f"Error loading raw data: {e}")
-        sys.exit(1)
-
-    if df.empty:
-        logging.error("Loaded DataFrame is empty.")
-        sys.exit(1)
-
-    # Basic inspection
+    # Standardize column names
     df.columns = df.columns.str.lower().str.replace(' ', '_')
-    df.dropna(subset=['churn'], inplace=True)
-    df['totalcharges'] = pd.to_numeric(df['totalcharges'], errors='coerce')
-    df['totalcharges'].fillna(0, inplace=True)
-    df.dropna(subset=['totalcharges', 'monthlycharges', 'customerid'], inplace=True)
+
+    # Replace spaces and handle missing values
+    df.replace(" ", pd.NA, inplace=True)
     df.dropna(inplace=True)
-    df['customerid'] = df['customerid'].astype(str)
-    df['churn'] = df['churn'].astype('category')
 
-    # Metadata
-    metadata = pd.DataFrame({
-        'column_name': df.columns,
-        'data_type': df.dtypes.values,
-        'missing_values': df.isnull().sum().values
-    })
-    metadata.to_csv('../data/processed/metadata.csv', index=False)
-    logging.info("Saved metadata.")
+    # Convert totalcharges to numeric (often comes as object)
+    if 'totalcharges' in df.columns:
+        df['totalcharges'] = pd.to_numeric(df['totalcharges'], errors='coerce')
+        df.dropna(subset=['totalcharges'], inplace=True)
 
-    # Save cleaned data
-    try:
-        df.to_csv(processed_data_path, index=False)
-        logging.info(f"Cleaned data saved to {processed_data_path}")
-    except Exception as e:
-        logging.error(f"Error saving cleaned data: {e}")
-        sys.exit(1)
-
-    return df
+    print(f"Saving cleaned data to {output_path}")
+    df.to_csv(output_path, index=False)
 
 if __name__ == "__main__":
-    main()
+    input_file = "data/raw/WA_Fn-UseC_-Telco-Customer-Churn.csv"
+    output_file = "data/processed/cleaned_telco.csv"
+
+    os.makedirs("data/processed", exist_ok=True)
+    load_and_clean_data(input_file, output_file)
