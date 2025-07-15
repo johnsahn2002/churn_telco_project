@@ -8,35 +8,45 @@ It reads from the processed output of ingest_data.py, transforms the data,
 and saves it for model training.
 """
 
-# 1. Import necessary libraries
-# (e.g., pandas, numpy, os, logging)
+# pipeline/transform_data.py
 
-# 2. Define file paths
-# Read from '../data/processed/cleaned_data.csv'
-# Save output to '../data/processed/engineered_data.csv'
+import pandas as pd
+import os
 
-# 3. Load cleaned data
-# Read the previously cleaned dataset into a DataFrame
+def transform_features(input_path, output_path):
+    print("Loading cleaned data...")
+    df = pd.read_csv(input_path)
 
-# 4. Create new features
-# Examples:
-# - tenure_bins: categorize customers into tenure groups (e.g., 0-12, 13-24 months)
-# - avg_monthly_spend = TotalCharges / tenure
-# - interaction_term = MonthlyCharges * tenure
-# - flag variables for services used (e.g., has_streaming, has_multiple_lines)
+    # Tenure groupings
+    df['tenure_group'] = pd.cut(
+        df['tenure'],
+        bins=[0, 12, 24, 48, 60, 72],
+        labels=['0-12', '12-24', '24-48', '48-60', '60+']
+    )
 
-# 5. Encode categorical variables
-# Use label encoding or one-hot encoding for columns like 'Contract', 'InternetService'
-# Drop or keep original columns as needed
+    # MonthlyCharges / Tenure ratio
+    df['monthly_charge_ratio'] = df['monthlycharges'] / (df['tenure'] + 1)
 
-# 6. Normalize or scale features (optional)
-# Apply MinMaxScaler, StandardScaler, or leave raw (depending on model choice)
+    # Binary indicator: has tech support
+    df['has_tech_support'] = df['techsupport'].map({'Yes': 1, 'No': 0})
 
-# 7. Drop irrelevant or redundant columns
-# Remove customer ID, or any features that leak target information
+    # Binary indicator: uses paperless billing
+    df['paperless_billing'] = df['paperlessbilling'].map({'Yes': 1, 'No': 0})
 
-# 8. Save engineered dataset
-# Export to '../data/processed/engineered_data.csv'
+    # Binary indicator: has streaming services
+    df['has_streaming_services'] = df[['streamingtv', 'streamingmovies']].apply(
+        lambda row: int('Yes' in row.values), axis=1
+    )
 
-# 9. Log completion
-# Print or log transformation summary (e.g., number of features created)
+    # Target column to binary
+    df['churn'] = df['churn'].map({'Yes': 1, 'No': 0})
+
+    # Save transformed file
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    df.to_csv(output_path, index=False)
+    print(f"✅ Transformed data saved to {output_path}")
+
+if __name__ == "__main__":
+    input_file = "data/processed/cleaned_telco.csv"
+    output_file = "data/processed/transformed_telco.csv"
+    transform_features(input_file, output_file)
